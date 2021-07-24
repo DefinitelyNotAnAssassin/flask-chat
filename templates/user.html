@@ -1,0 +1,63 @@
+{% extends "modals.html" %}
+
+{% block title %} Profile Page {% endblock %}
+
+{% block content %}
+
+{% if user %}
+
+ <div class = "card border-dark info mt-3 mx-3 ">
+    <div class = "card-title mt-3 text-center">
+      <h5> {{user.username}} </h5>
+    </div>
+    
+    <div class="card-body">
+      <div class = "bio card border-dark text-center">
+        <p> {{user.bio}} </p>
+        
+        
+        
+      </div>
+      
+      <div class="row">
+        <button data-bs-toggle="modal" data-bs-target="#staticBackdrop" class = " col-12 btn-primary btn btn-sm">Edit Bio</button>
+      </div>
+      
+      <form class = "form-group">
+        
+        <input type = "text" class="mb-3 col-12 mt-3  form-control" placeholder="What's on your mind?" data-bs-target="#post_status" data-bs-toggle = "modal"> </input>
+        
+      </form>
+      
+     {% for post in message %} 
+         
+     <div id = "{{post.message}}" class = "card mt-3 mx-3">
+       <div id = "{{post.name}}" class = "mx-2 mt-2 card-title">
+         <div id = "{{post.date}}"class="row">
+           <h6 class = "col">{{post.name}}</h6>
+           <h6 class = "text-end col" onclick="hello(this)"> ... </h6>
+           
+         </div>
+       </div>
+       
+       <div class = "card-body">
+         <p class="card-text">{{post.message}}</p>
+         
+       </div>
+       
+     </div>
+     
+
+      {% endfor %}
+      
+      
+    </div>
+   
+  </div>
+
+{% else %}
+<h5> User doesn't exist. </h5>
+ 
+{% endif %}
+
+{% endblock %}
