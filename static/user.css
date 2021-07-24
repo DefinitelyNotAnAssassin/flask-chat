@@ -1,0 +1,10 @@
+.info{
+  height: 100vh;
+  overflow-y: scroll;
+  
+}
+
+.bio{
+  height: 15vh;
+  width: 85vw;
+}
