@@ -78,8 +78,8 @@ def register():
 		  
 @app.route("/communicate", methods = ["POST"])
 def communicate():
-  data = request.get_json()
-  for i in data:
+  session["data"] = request.get_json()
+  for i in session["data"]:
   	flash(i)
   	
   print(data)
