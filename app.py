@@ -1,17 +1,20 @@
 from flask import *
 from datetime import *
 import time 
+from sqlalchemy import or_, and_, desc
 from flask_sqlalchemy import SQLAlchemy
-
+from sqlalchemy.ext.mutable import Mutable
+import uuid
+from flask_bcrypt import Bcrypt
 app = Flask(__name__)
 app.secret_key = "ThisIsSupposedToBeSecured"
-app.permanent_session_lifetime = timedelta(minutes=25)
+app.permanent_session_lifetime = timedelta(minutes=60)
 
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.sqlite3'
 db = SQLAlchemy(app)
-
+bcrypt = Bcrypt(app)
 
 
 class users(db.Model):
@@ -28,16 +31,32 @@ class users(db.Model):
     self.friends = friends
     self.bio = bio
     self.status = status 
-class messages(db.Model):
+class status(db.Model):
   _id = db.Column("id", db.Integer, primary_key = True)
   name = db.Column(db.String)
   date = db.Column(db.String)
   message = db.Column(db.String)
-  def __init__(self, name, date, message):
+  identifier = db.Column(db.String)
+  def __init__(self, name, date, message, identifier):
     self.name = name
     self.date = date
     self.message = message
+    self.identifier = identifier
+class message(db.Model):
+  _id = db.Column("id", db.Integer, primary_key = True)
+  sender = db.Column(db.String)
+  receiver = db.Column(db.String)
+  content = db.Column(db.String)
+  identifier = db.Column(db.String)
+  date = db.Column(db.String)
   
+  def __init__(self, sender, receiver, content, identifier, date):
+    self.sender = sender 
+    self.receiver = receiver
+    self.content = content
+    self.identifier = identifier 
+    self.date = date
+      
 
   
 
@@ -50,26 +69,24 @@ def redirect_url(default='index'):
 
 @app.route("/")
 def index():
-  #db.session.query(messages).delete()
   #db.session.commit()
-  
   return render_template("index.html")
 
 @app.route("/register", methods = ["POST", "GET"])
 def register():
 	if request.method == "GET":
-	  session["messages"] = []
-	  return render_template("register.html", messages = session["messages"])
+	  session["status"] = []
+	  return render_template("register.html", messages = session["status"])
 	
 	elif request.method == "POST":
 		username = request.form["username"]
-		password = request.form["password"]
+		hash_password = bcrypt.generate_password_hash(request.form["password"])
 		isExist = users.query.filter_by(username = username).first()
 		if isExist:
 		  flash("Username exists.")
 		  return render_template("register.html")
 		else:
-		  add_user = users(username, password,[], "", "")
+		  add_user = users(username, hash_password,[f"{username}"], "", "")
 		  db.session.add(add_user)
 		  db.session.commit()
 		  return redirect(url_for("index"))
@@ -82,14 +99,22 @@ def communicate():
   for i in session["data"]:
   	flash(i)
   	
-  print(data)
+  print(session["data"])
   return "Hello"
   
-
+@app.route("/logout")
+def logout():
+  session.pop("isLogged", None)
+  session.pop("username", None)
+  
+  
+  return redirect( url_for("index"))
   
  
 @app.route("/login", methods = ["POST", "GET"])
 def login():
+ 
+  
   if request.method == "GET":
     if "isLogged" in session:
       return redirect(url_for("profile"))
@@ -97,43 +122,62 @@ def login():
       return render_template("login.html")
   if request.method == "POST":
     session["username"] = request.form["username"]
-    password = request.form["password"]
-    login.isExist = users.query.filter_by(username = session["username"], password = password).first()
-    if login.isExist:
+    x = users.query.filter_by(username = session["username"]).first()
+    if x:
+      isExist = bcrypt.check_password_hash(x.password, request.form["password"])
+    else:
+      isExist = False
+    if isExist:
       session["isLogged"] = True
-      return redirect(url_for("profile"))
+      return redirect(f"/user/{session['username']}")
     else:
       flash("Invalid Username or Password")
       return redirect(redirect_url())
 
 
 
+
+
 @app.route("/profile")
 def profile():
   if "isLogged" in session:
-    return render_template("profile.html", username = session["username"], message = messages.query.all())
+    return render_template("profile.html", username = session["username"], message = status.query.all())
     
     
   else:
     flash("Not yet logged in.")
     return redirect(url_for("login"))
-  
+ 
+ 
   
 @app.route("/add_friend", methods = ["POST"])
 def add_friend():
   if request.method == "POST":
     x = users.query.filter_by(username = session["username"]).first()
+    name = request.get_json()
+    print(f"Received: {name[0]}")
+    friends = list(x.friends)
+    friends.append(name[0])
+    print(f"Current Friends of : {x.friends}")
+    x.friends = friends
+    db.session.commit()
+    print(f"Friends after commit: {x.friends}")
+    return redirect(redirect_url())
+    
+  else:
+    return "404 - Not Found"
    
  
 
 @app.route("/post_status", methods = ["POST"])
 def post_status():
   if request.method == "POST":
-    message = request.form["status"]
-    print(message)
+    status_content = request.form["status"]
+    print(status)
+    unique_id = uuid.uuid4()
     date = time.localtime(time.time())
-    add_messages = messages(session["username"], f"{date.tm_year}/{date.tm_mon}/{date.tm_mday}/{date.tm_hour}:{date.tm_min}:{date.tm_sec}", message)
-    db.session.add(add_messages)
+    add_status = status(session["username"], f"{date.tm_year}/{date.tm_mon}/{date.tm_mday}/{date.tm_hour}:{date.tm_min}:{date.tm_sec}", status_content, f"{unique_id}" )
+    db.session.add(add_status)
     db.session.commit()
     return redirect(redirect_url())
     
@@ -145,7 +189,18 @@ def post_status():
 def user_profile(username):
   if "isLogged" in session:
     z = users.query.filter_by(username = username).first()
-    return render_template("user.html", user = z, message = messages.query.filter_by(name = username).all() )
+    if username == session["username"]:
+      session["isFriends"] = "Self"
+
+    else:
+      y = users.query.filter_by(username = session["username"]).first() 
+      print(z.username, y.friends, y.username)
+      if z.username in y.friends:
+        session["isFriends"] = True
+      else:
+        session["isFriends"] = False
+    print(session["isFriends"])
+    return render_template("user.html", user = z, message = status.query.filter_by(name = username).all(), isFriends = session["isFriends"], username = session["username"])
     
   else:
     flash("Not yet logged in.")
@@ -156,8 +211,9 @@ def user_profile(username):
 def delete():
   if request.method == "POST":
     data = request.get_json()
-    delete_message = messages.query.filter_by(name = data["name"], date = data["date"], message = data["id"]).first()
-    db.session.delete(delete_message)
+    print(data)
+    delete_status = status.query.filter_by(name = data["name"], identifier = data["identifier"]).first()
+    db.session.delete(delete_status)
     db.session.commit()
     return redirect(redirect_url())
   
@@ -178,6 +234,61 @@ def edit_bio():
     flash("Access Denied")
     return redirect (url_for("index"))
 
+@app.route('/newsfeed')
+def newsfeed():
+  if "isLogged" in session:
+    x = users.query.filter_by(username = session["username"]).first()
+    post =  status.query.filter(status.name.in_(x.friends))
+    return render_template("newsfeed.html", user = x)
+  else:
+    flash('Not yet logged in.')
+    return redirect(url_for("login"))
+
+
+
+@app.route('/inbox')
+def inbox():
+  if "isLogged" in session:
+    x = users.query.filter_by(username = session["username"]).first()
+    #msg = message.query.with_entities(message._id, message.sender).filter(message.sender.in_(x.friends))
+   # msg = message.query.group_by(message._id).order_by(message._id.desc()).distinct(message.sender)
+   # msg = message.query.with_entities(message._id, message.sender).group_by(message._id, message.sender).distinct()
+     
+    msg = message.query.filter(or_(message.sender.in_(x.friends), message.receiver == x.username)).order_by(message._id.desc())
+    messagesReceived = db.session.query(message.sender).filter(message.sender.in_(x.friends)).group_by(message.sender).order_by(db.func.max(message._id)).distinct()
+    print (messagesReceived)
+   # msg = message.query.with_entities(message.sender, message._id).filter(message.sender.in_(x.friends)).group_by(message.sender, message._id).order_by(message._id.desc())
+    return render_template("inbox.html", user = x, msg = messagesReceived)
+  else:
+    return redirect(url_for("login"))
+
+@app.route('/inbox/<username>')
+def inbox_user(username):
+  if "isLogged" in session:
+    x = users.query.filter_by(username = session['username']).first()
+    msg = message.query.filter(or_(and_(message.sender == username, message.receiver == x.username),and_(message.sender == x.username, message.receiver == username))).order_by(message._id).all()
+    return render_template("send_message.html", username = username, user = x, msg = msg)
+    
+
+
+@app.route('/send_message', methods = ['POST'])
+def send_message():
+  if request.method == "POST":
+    data = request.get_json()
+    identifier = str(uuid.uuid4)
+    date = time.localtime(time.time())
+    
+    add_message = message(data["sender"], data["receiver"], data["content"], identifier, f"{date.tm_year}/{date.tm_mon}/{date.tm_mday}/{date.tm_hour}:{date.tm_min}:{date.tm_sec}")
+    print(f"Sender: {data['sender']}")
+    print(f"Receiver: {data['receiver']}")
+    db.session.add(add_message)
+    db.session.commit()
+    return redirect(redirect_url())
+
+
 if __name__ == "__main__":
   db.create_all()
   app.run(debug = True)
+  
+  
+  
