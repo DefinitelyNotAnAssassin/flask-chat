@@ -2,9 +2,10 @@ function hello (e) {
  
 let messages = {
   name:e.parentNode.parentNode.id,
-  date: e.parentNode.id,
-  id: e.parentNode.parentNode.parentNode.id 
+  identifier: e.parentNode.id
 }
+
+
 
 let confirm_delete = confirm("Delete message? ")
 
@@ -28,4 +29,21 @@ e.parentNode.parentNode.parentNode.parentNode.removeChild(e.parentNode.parentNod
 }
 
 
+}
+
+function send_name(){
+  let name = document.getElementById("name")
+  let username = []
+  username.push(name.innerText)
+  
+  fetch(`${window.origin}/add_friend`, {
+    method: "POST",
+    credentials: "include",
+    body: JSON.stringify(username),
+    cache: "no-cache",
+    headers: new Headers({
+      "content-type": "application/json"
+    })
+  })
+  location.reload() 
 }

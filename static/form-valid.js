@@ -4,25 +4,44 @@ const form = document.getElementById('mainform')
 const second_password = document.getElementById("secure_pass")
 
 
+const password_error = document.getElementById("password-error")
+const second_error = document.getElementById("second-error")
+const name_error = document.getElementById("name-error")
+
 form.addEventListener('submit', (e) => {
   let messages = []
   if (name.value === '' || name.value == null) {
-    messages.push('Name is required \n')
+    messages.push('Filler')
+    name_error.innerText = "Name is required."
+  }
+  else{
+    name_error.innerText = ""
   }
 
-  if (password.value.length <= 6) {
-    messages.push('Password must be longer than 6 characters \n')
-  }
   
-  if (password.value != second_password.value){
+  
+  
+  
+  if (password.value != second_password.value || second_password.value != password.value){
     
-    messages.push("Password doesn't match. \n")
-    
+    messages.push("Filler")
+    second_error.innerText = "Password doesn't match"
+  }
+  else{
+    second_error.innerText = ""
   }
   
 
   if (password.value.length >= 20) {
-    messages.push('Password must be less than 20 characters \n')
+    messages.push('Filler')
+    password_error.innerText = "Password should be less than 20 characters"
+  }
+  else if (password.value.length <= 8){
+    messages.push('Filler')
+    password_error.innerText = "Password should be atleast 8 characters"
+  }
+  else{
+    password_error.innerText = ""
   }
 
   if (password.value === 'password') {
@@ -33,16 +52,6 @@ form.addEventListener('submit', (e) => {
     e.preventDefault()
     let data = JSON.stringify(messages)
     
-    fetch(`${window.origin}/communicate`, {
-    method: "POST",
-    credentials: "include",
-    body: JSON.stringify(messages),
-    cache: "no-cache",
-    headers: new Headers({
-      "content-type": "application/json"
-    })
-  })
-    location.reload()
   }
  
 })
