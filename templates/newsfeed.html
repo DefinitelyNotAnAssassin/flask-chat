@@ -1,0 +1,52 @@
+{% extends "modals.html" %}
+
+{% block title %} Newsfeed {% endblock %}
+
+
+{% block head %}
+<script src="{{ url_for('static', filename = 'profile.js') }}"></script>
+   
+
+{% endblock %}
+
+
+{% block content %}
+
+
+   <form class = "mx-3 mt-4 row form-group">
+     
+     <input type = "text" class = "form-control" placeholder="What's on your mind?" data-bs-toggle="modal" data-bs-target="#post_status"> </input>
+   </form>
+   
+
+   
+  <div class = "scroll mx-3 mt-3">
+    
+   
+   
+   {% for message in post %}
+   
+   <div class = "card">
+     
+   <h6 class="card-title"> {{message.name}}</h6>
+ 
+     
+     <div class = "card-body">
+       
+         <p class = "card-text">{{message.message}}</p>
+         
+       
+     </div>
+     
+   </div>
+   
+   
+   
+   
+   <br>
+   <div class = "mt-1"></div>
+   {% endfor %}
+  </div>
+   
+
+{% endblock %}

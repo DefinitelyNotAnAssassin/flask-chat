@@ -1,0 +1,48 @@
+{% extends "modals.html" %}
+
+{% block head %}
+
+<link rel ="stylesheet" href = "{{ url_for('static', filename = 'profile.css') }}">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<div class  = "card mt-3 mx-3 scroll">
+  
+  
+  {% for msg in msg %}
+  
+  {% if msg.sender != user.username %}
+  <div id = "{{msg.sender}}" >
+    <div onclick = "select_user(this)" class="mx-2 card">
+        <h6  class = "card-title py-3"> {{msg.id}} {{msg.sender}}</h6>
+        <small class = "card-text">{{msg.content}} </small>
+    </div>
+  </div>
+  
+  <div class = "mt-2"></div>
+  
+  {% endif %} 
+  {% endfor %}
+ 
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+
+function select_user(e) {
+let name = e.parentNode.id
+
+window.location.replace(`${window.origin}/inbox/${name}`)
+}
+
+</script>
+
+
+{% endblock %} 

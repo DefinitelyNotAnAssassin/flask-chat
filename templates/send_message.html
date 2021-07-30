@@ -1,0 +1,86 @@
+{% extends "modals.html" %}
+
+{% block title %} {% endblock %} 
+
+{% block head %}
+
+  <link rel ="stylesheet" href = "{{ url_for('static', filename = 'profile.css') }}">
+
+{% endblock %}
+
+{% block content %}
+
+
+<div class = "scroll">
+  
+{% if msg %}
+
+{% for msg in msg %}
+
+{% if msg.sender == username and msg.receiver == user.username %}
+
+<div class="d-flex flex-row mx-2 my-3">
+  
+  <p class="px-3 border border-secondary rounded-pill"> {{msg.content}} </p>
+  
+</div>
+
+{% endif %}
+
+{% if msg.sender == user.username and msg.receiver == username %}
+
+<div class="d-flex flex-row-reverse mx-2 my-3">
+  
+  <p class="px-3 border border-secondary rounded-pill"> {{msg.content}} </p>
+  
+</div>
+
+{% endif %}
+
+{% endfor %}
+
+{% endif %}
+  
+  
+</div>
+
+
+<div class="input-group mb-3">
+  <input id = "content" type="text" class="form-control" placeholder="Type a message."  aria-describedby="button-addon2">
+  <button onclick="send_message()"class="btn btn-outline-secondary" type="button" id="button-addon2">Send</button>
+</div>
+{% endblock %}
+
+{% block script %}
+
+<script>
+
+function send_message() {
+
+let sender = "{{user.username}}"
+let receiver = "{{username}}"
+let content = document.getElementById("content")
+
+let data = {
+  sender: sender,
+  receiver: receiver,
+  content: content.value
+}
+
+fetch(`${window.origin}/send_message`, {
+    method: "POST",
+    credentials: "include",
+    body: JSON.stringify(data),
+    cache: "no-cache",
+    headers: new Headers({
+      "content-type": "application/json"
+    })
+  })
+
+location.reload()
+}
+
+
+</script>
+
+{% endblock %} 

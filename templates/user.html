@@ -8,7 +8,7 @@
 
  <div class = "card border-dark info mt-3 mx-3 ">
     <div class = "card-title mt-3 text-center">
-      <h5> {{user.username}} </h5>
+      <h5 id = "name"> {{user.username}} </h5>
     </div>
     
     <div class="card-body">
@@ -19,24 +19,45 @@
         
       </div>
       
+      {% if user.username == username %}
       <div class="row">
         <button data-bs-toggle="modal" data-bs-target="#staticBackdrop" class = " col-12 btn-primary btn btn-sm">Edit Bio</button>
       </div>
+      {% endif %} 
+      {% if isFriends == False %}
+      
+       <div class="row">
+        <button onclick="send_name()" class = "mt-3 col-12 btn-primary btn btn-sm">Follow</button>
+        
+      </div>
+      {% elif isFriends == True and username != user.username %}
+      
+     <div class="row">
+          <button class = " col-12 btn-primary btn btn-sm">Following</button>
+  
+        <button onclick="send_msg()" class = "btn btn-primary btn-sm mt-3 col-12">Send Message</button>
+     </div>
+      
+      {% endif %}
+     
       
       <form class = "form-group">
         
+        {% if user.username == username %}
         <input type = "text" class="mb-3 col-12 mt-3  form-control" placeholder="What's on your mind?" data-bs-target="#post_status" data-bs-toggle = "modal"> </input>
-        
+        {% endif %}
       </form>
       
      {% for post in message %} 
          
-     <div id = "{{post.message}}" class = "card mt-3 mx-3">
+     <div  class = "card mt-3 mx-3">
        <div id = "{{post.name}}" class = "mx-2 mt-2 card-title">
-         <div id = "{{post.date}}"class="row">
-           <h6 class = "col">{{post.name}}</h6>
+         <div id = "{{post.identifier}}" class="row">
+           <h6 class = "col" >{{post.name}}</h6>
+           {% if user.username == username %}
            <h6 class = "text-end col" onclick="hello(this)"> ... </h6>
            
+           {% endif %}
          </div>
        </div>
        
@@ -56,8 +77,23 @@
   </div>
 
 {% else %}
+
 <h5> User doesn't exist. </h5>
  
 {% endif %}
 
 {% endblock %}
+
+{% block script %}
+
+<script>
+function send_msg(){
+ 
+let u = "{{user.username}}"
+
+location.replace(`${window.origin}/inbox/${u}`)
+
+}
+</script>
+
+{% endblock %} 
