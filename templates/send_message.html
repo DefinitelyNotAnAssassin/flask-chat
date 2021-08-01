@@ -19,9 +19,9 @@
 
 {% if msg.sender == username and msg.receiver == user.username %}
 
-<div class="d-flex flex-row mx-2 my-3">
+<div class="parent d-flex flex-row mx-2 my-3">
   
-  <p class="px-3 border border-secondary rounded-pill"> {{msg.content}} </p>
+  <p class="msg me-3 px-3 border border-secondary rounded-pill "> {{msg.content}} </p>
   
 </div>
 
@@ -29,9 +29,9 @@
 
 {% if msg.sender == user.username and msg.receiver == username %}
 
-<div class="d-flex flex-row-reverse mx-2 my-3">
+<div class="parent d-flex flex-row-reverse mx-2 my-3">
   
-  <p class="px-3 border border-secondary rounded-pill"> {{msg.content}} </p>
+  <p class="msg px-3 border border-secondary rounded-pill rounded-0"> {{msg.content}} </p>
   
 </div>
 
