@@ -39,6 +39,10 @@
 
 {% endfor %}
 
+<div id = "newentry">
+  
+</div>
+
 {% endif %}
   
   
@@ -53,12 +57,63 @@
 
 {% block script %}
 
+
+<script src ="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.3/socket.io.js"></script>
+
 <script>
+let socket = io()
+let new_entry = document.getElementById('newentry')
+let ids = "{{uid}}"
+
+
+socket.on('connect', function() {
+        socket.emit('receive', {
+          room_id: ids
+        })
+    }) 
+    
+    
+let current_user = "{{user.username}}"
+let target = "{{username}}"
+
+socket.on('add_element', function(msg) {
+  if (msg.sender == current_user){
+    let p
+    let div
+    div = document.createElement('div')
+    div.className = "d-flex flex-row-reverse mx-2 my-3"
+    p = document.createElement('p')
+    p.className = " msg px-3 border border-secondary rounded-pill rounded-0"
+    p.innerText = msg.content
+    div.appendChild(p)
+    new_entry.appendChild(div)
+  }
+  
+  
+  else{
+    let div2
+    let p2
+   div2 = document.createElement('div')
+    div2.className = "d-flex mx-2 my-3"
+    p2 = document.createElement('p')
+    p2.className = " msg px-3 border border-secondary rounded-pill rounded-0"
+    p2.innerText = msg.content
+    div2.appendChild(p2)
+    new_entry.appendChild(div2)
+}
+}
+)
+
+
+
+
+
 
 function send_message() {
 
 let sender = "{{user.username}}"
 let receiver = "{{username}}"
+let id = "{{uid}}"
 let content = document.getElementById("content")
 
 let data = {
@@ -77,10 +132,28 @@ fetch(`${window.origin}/send_message`, {
     })
   })
 
-location.reload()
+socket.emit('message receive', {
+ sender: sender,
+ receiver: receiver,
+ content: content.value,
+ room_id: id
+})
+
+content.value = ""
+
+
+
+
 }
+/* after the page */
+
+
+
+
 
 
 </script>
+
+
 
 {% endblock %} 
