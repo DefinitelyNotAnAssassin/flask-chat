@@ -4,3 +4,17 @@
   
   
 }
+
+
+.parent{
+
+  
+}
+
+.msg{
+max-width: 70vw;
+font-size: 9px;
+word-spacing: 0.1vw;
+text-align: left;
+max-inline-size: 30-vw;
+}
