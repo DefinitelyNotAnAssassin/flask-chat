@@ -6,6 +6,9 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.ext.mutable import Mutable
 import uuid
 from flask_bcrypt import Bcrypt
+from flask_socketio import SocketIO, emit, join_room, leave_room
+
+
 app = Flask(__name__)
 app.secret_key = "ThisIsSupposedToBeSecured"
 app.permanent_session_lifetime = timedelta(minutes=60)
@@ -15,8 +18,24 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.sqlite3'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
+socketio = SocketIO(app)
 
 
+# SocketIO
+
+@socketio.on('receive')
+def handler(data):
+  print(data)
+  join_room(data["room_id"])
+  print(f"User successfully joined room: {data['room_id']}")
+  
+@socketio.on('message receive')
+def message_server(msg):
+  print(f"Message Received! {msg}") 
+  emit('add_element', msg, to = msg["room_id"], broadcast = True)
+
+
+# SQLAlchemy
 class users(db.Model):
   _id = db.Column("id", db.Integer, primary_key = True)
   username = db.Column("username", db.String(100))
@@ -56,7 +75,6 @@ class message(db.Model):
     self.content = content
     self.identifier = identifier 
     self.date = date
-      
 class friend_uid(db.Model):
   _id = db.Column("id", db.Integer, primary_key = True)
   initiator = db.Column("initiator", db.String)
@@ -68,13 +86,15 @@ class friend_uid(db.Model):
     self.target = target 
     self.uid = uid
 
+
+#/..
 def redirect_url(default='index'):
     return request.args.get('next') or \
            request.referrer or \
            url_for(default)
 
 
-
+#URL Routing
 @app.route("/")
 def index():
   #db.session.commit()
@@ -141,9 +161,6 @@ def login():
     else:
       flash("Invalid Username or Password")
       return redirect(redirect_url())
-
-
-
 
 
 @app.route("/profile")
@@ -271,8 +288,11 @@ def inbox():
 def inbox_user(username):
   if "isLogged" in session:
     x = users.query.filter_by(username = session['username']).first()
+    username = request.args["username"]
     msg = message.query.filter(or_(and_(message.sender == username, message.receiver == x.username),and_(message.sender == x.username, message.receiver == username))).order_by(message._id).all()
-    return render_template("send_message.html", username = username, user = x, msg = msg)
+    uid = request.args["uid"]
+    print(uid)
+    return render_template("send_message.html", username = username, user = x, msg = msg, uid = uid)
     
 
 
@@ -293,7 +313,7 @@ def send_message():
 
 if __name__ == "__main__":
   db.create_all()
-  app.run(debug = True)
+  socketio.run(app, debug = True)
   
   
   
