@@ -1,0 +1,35 @@
+The design should be as follow:
+
+// Database \\
+
+
+
+// Registration \\
+
+A user register and verified by javascript, the form should be secured and prone to inspect element. if username == already exist! then flash()
+
+// Login \\
+A user login through two forms (username, password), the following forms would be processed on a query like "FROM users SELECT * WHERE username = ?, password = ?"
+if user == doesn't exist then flash()
+
+if user == exist, then proceed to assign ["isLogged"] and ["username"] to the session.
+
+redirects to `{$window.origin}/user/<username>`
+
+
+// `${window.origin}/user/<username>` \\
+
+This is the profile page of the user where "isFriends" is checked every load
+
+
+
+
+e.g. "127.0.0.1:5000/user/Winmari"
+
+if session["username"] (the current user) is the same as the <username> (the characters after the /user/) then proceed to assign ['isFriends'] = Self, allowing to edit the bio and deleting the posts.
+
+e.g. "127.0.0.1:5000/user/Test" else if session ["username"] != <username> then query on the "friendsUID" table and find if the query "SELECT * FROM friendsUID WHERE initiator = session['username'] AND target = <username> OR initiator = <username> AND  target = session["username"]", this would query if there is an existing relationship for the user and the target profile. 
+
+e.g "127.0.0.1:5000/user/NotFriend" if the query doesn't exist then show "follow" button and if it is clicked then it would create a uuid4 "friendship id" that would be used as a room_id for communication between the two accounts
+
+Send Message Button - will redirect to `${window.origin}/inbox/<username>?room_id={{room_id}}`

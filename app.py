@@ -57,8 +57,16 @@ class message(db.Model):
     self.identifier = identifier 
     self.date = date
       
-
+class friend_uid(db.Model):
+  _id = db.Column("id", db.Integer, primary_key = True)
+  initiator = db.Column("initiator", db.String)
+  target = db.Column("target", db.String)
+  uid = db.Column("uid", db.String)
   
+  def __init__(self, initiator, target, uid):
+    self.initiator = initiator 
+    self.target = target 
+    self.uid = uid
 
 def redirect_url(default='index'):
     return request.args.get('next') or \
@@ -153,20 +161,22 @@ def profile():
 @app.route("/add_friend", methods = ["POST"])
 def add_friend():
   if request.method == "POST":
-    x = users.query.filter_by(username = session["username"]).first()
+    uid = str(uuid.uuid4())
     name = request.get_json()
-    print(f"Received: {name[0]}")
-    friends = list(x.friends)
-    friends.append(name[0])
-    print(f"Current Friends of : {x.friends}")
-    x.friends = friends
+   #Initiate new queries
+   #Session Username is = Current_User
+    current_user = users.query.filter_by(username = session["username"]).first()
+    #manipulate current_user friends
+    friends =list(current_user.friends)
+    friends.append(f"{name[0]}")
+    current_user.friends = friends
+    #add_query to friend_uid
+    add_uid = friend_uid(session["username"],name[0],uid)
+    #commit everything
+    db.session.add(add_uid)
     db.session.commit()
-    print(f"Friends after commit: {x.friends}")
-    return redirect(redirect_url())
     
-  else:
-    return "404 - Not Found"
-   
+    return redirect(redirect_url())
  
 
 @app.route("/post_status", methods = ["POST"])
@@ -184,23 +194,23 @@ def post_status():
   else:
     return redirect(url_for("index"))
 
-
+# TODO
 @app.route('/user/<username>')
 def user_profile(username):
   if "isLogged" in session:
+    # complicated isFriends query
     z = users.query.filter_by(username = username).first()
+    friends = friend_uid.query.filter(or_(and_(friend_uid.initiator == username, friend_uid.target == session['username']),and_(friend_uid.initiator == session['username'], friend_uid.target == username))).first()
+    print(friends)
     if username == session["username"]:
       session["isFriends"] = "Self"
-
+    
+    elif friends:
+      session["isFriends"] = True
     else:
-      y = users.query.filter_by(username = session["username"]).first() 
-      print(z.username, y.friends, y.username)
-      if z.username in y.friends:
-        session["isFriends"] = True
-      else:
-        session["isFriends"] = False
-    print(session["isFriends"])
-    return render_template("user.html", user = z, message = status.query.filter_by(name = username).all(), isFriends = session["isFriends"], username = session["username"])
+      session["isFriends"] = False
+    print (session['isFriends'])
+    return render_template("user.html", user = z, message = status.query.filter_by(name = username).all(), isFriends = session["isFriends"], username = session["username"], uid = friends)
     
   else:
     flash("Not yet logged in.")
@@ -250,14 +260,9 @@ def newsfeed():
 def inbox():
   if "isLogged" in session:
     x = users.query.filter_by(username = session["username"]).first()
-    #msg = message.query.with_entities(message._id, message.sender).filter(message.sender.in_(x.friends))
-   # msg = message.query.group_by(message._id).order_by(message._id.desc()).distinct(message.sender)
-   # msg = message.query.with_entities(message._id, message.sender).group_by(message._id, message.sender).distinct()
-     
-    msg = message.query.filter(or_(message.sender.in_(x.friends), message.receiver == x.username)).order_by(message._id.desc())
+    
     messagesReceived = db.session.query(message.sender).filter(message.sender.in_(x.friends)).group_by(message.sender).order_by(db.func.max(message._id)).distinct()
     print (messagesReceived)
-   # msg = message.query.with_entities(message.sender, message._id).filter(message.sender.in_(x.friends)).group_by(message.sender, message._id).order_by(message._id.desc())
     return render_template("inbox.html", user = x, msg = messagesReceived)
   else:
     return redirect(url_for("login"))
